@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Bot IA Admin</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .action-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .action-card:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+        
+        .action-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        
+        .channel-stats {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        
+        .channel-bar {
+            background: #e2e8f0;
+            border-radius: 8px;
+            height: 32px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+        
+        .channel-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+        
+        .web-fill { background: #667eea; width: 0%; }
+        .whatsapp-fill { background: #48bb78; width: 0%; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 Bot IA</h2>
+                <p id="userName" class="user-name"></p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/static/pages/dashboard.html" class="nav-item active">
+                    <span class="nav-icon">📊</span> Dashboard
+                </a>
+                <a href="/static/pages/companies.html" class="nav-item">
+                    <span class="nav-icon">🏢</span> Empresas
+                </a>
+                <a href="/static/pages/bot-config.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span> Configuración
+                </a>
+                <a href="/static/pages/conversations.html" class="nav-item">
+                    <span class="nav-icon">💬</span> Conversaciones
+                </a>
+                <a href="/static/pages/analytics.html" class="nav-item">
+                    <span class="nav-icon">📈</span> Analíticas
+                </a>
+                <a href="#" class="nav-item" onclick="logout()">
+                    <span class="nav-icon">🚪</span> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <div class="top-bar">
+                <h1>Dashboard Principal</h1>
+                <div class="company-selector">
+                    <span id="selectedCompanyName">Todas las empresas</span>
+                    <button onclick="showCompanyModal()" class="btn-sm">Cambiar</button>
+                </div>
+            </div>
+            
+            <div id="statsContainer" class="stats-grid">
+                <div class="stat-card">Cargando estadísticas...</div>
+            </div>
+            
+            <div class="channel-stats" id="channelStats">
+                <h3>📱 Distribución por Canal</h3>
+                <div class="channel-bar">
+                    <div id="webBar" class="channel-fill web-fill">Web Chat</div>
+                </div>
+                <div class="channel-bar">
+                    <div id="whatsappBar" class="channel-fill whatsapp-fill">WhatsApp</div>
+                </div>
+            </div>
+            
+            <div class="quick-actions">
+                <div class="action-card" onclick="location.href='/static/pages/companies.html'">
+                    <div class="action-icon">🏢</div>
+                    <div>Gestionar Empresas</div>
+                    <small>Crear y editar</small>
+                </div>
+                <div class="action-card" onclick="location.href='/static/pages/bot-config.html'">
+                    <div class="action-icon">⚙️</div>
+                    <div>Configurar Bot</div>
+                    <small>Ajustes por empresa</small>
+                </div>
+                <div class="action-card" onclick="location.href='/static/pages/conversations.html'">
+                    <div class="action-icon">💬</div>
+                    <div>Ver Conversaciones</div>
+                    <small>Historial completo</small>
+                </div>
+                <div class="action-card" onclick="location.href='/static/pages/analytics.html'">
+                    <div class="action-icon">📈</div>
+                    <div>Analíticas</div>
+                    <small>Reportes detallados</small>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="companyModal" class="modal">
+        <div class="modal-content">
+            <h3>Seleccionar Empresa</h3>
+            <select id="companySelect" class="form-control"></select>
+            <div style="margin-top: 20px; display: flex; gap: 12px;">
+                <button onclick="selectCompany()" class="btn-primary">Seleccionar</button>
+                <button onclick="closeModal()" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+        let currentCompany = null;
+        
+        function checkAuth() {
+            token = localStorage.getItem('admin_token');
+            if (!token) {
+                window.location.href = '/static/login.html';
+            }
+            const name = localStorage.getItem('admin_name');
+            document.getElementById('userName').innerText = name || 'Admin';
+        }
+        
+        async function loadStats() {
+            try {
+                let url = '/api/admin/stats/dashboard';
+                if (currentCompany) {
+                    url = `/api/admin/stats/companies/${currentCompany.id}`;
+                }
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const stats = await response.json();
+                
+                let statsHtml = `
+                    <div class="stat-card">
+                        <div class="stat-icon">🏢</div>
+                        <div class="stat-value">${stats.total_companies || stats.total_conversations || 0}</div>
+                        <div class="stat-label">${currentCompany ? 'Conversaciones' : 'Empresas'}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-value">${stats.total_messages || 0}</div>
+                        <div class="stat-label">Mensajes Totales</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value">${stats.active_companies || stats.active_conversations || 0}</div>
+                        <div class="stat-label">${currentCompany ? 'Conversaciones Activas' : 'Empresas Activas'}</div>
+                    </div>
+                `;
+                
+                document.getElementById('statsContainer').innerHTML = statsHtml;
+                
+                if (stats.messages_by_channel) {
+                    const total = stats.messages_by_channel.web + stats.messages_by_channel.whatsapp;
+                    const webPercent = total > 0 ? (stats.messages_by_channel.web / total * 100) : 0;
+                    const whatsPercent = total > 0 ? (stats.messages_by_channel.whatsapp / total * 100) : 0;
+                    
+                    document.getElementById('webBar').style.width = `${webPercent}%`;
+                    document.getElementById('webBar').innerHTML = `Web Chat (${Math.round(webPercent)}%)`;
+                    document.getElementById('whatsappBar').style.width = `${whatsPercent}%`;
+                    document.getElementById('whatsappBar').innerHTML = `WhatsApp (${Math.round(whatsPercent)}%)`;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadCompanies() {
+            const response = await fetch('/api/admin/companies', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            const select = document.getElementById('companySelect');
+            select.innerHTML = '<option value="">Todas las empresas</option>';
+            data.data.forEach(company => {
+                select.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+            });
+        }
+        
+        function showCompanyModal() {
+            loadCompanies();
+            document.getElementById('companyModal').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('companyModal').style.display = 'none';
+        }
+        
+        async function selectCompany() {
+            const select = document.getElementById('companySelect');
+            const companyId = select.value;
+            if (companyId) {
+                const companyName = select.options[select.selectedIndex].text;
+                currentCompany = { id: parseInt(companyId), name: companyName };
+                document.getElementById('selectedCompanyName').innerText = companyName;
+            } else {
+                currentCompany = null;
+                document.getElementById('selectedCompanyName').innerText = 'Todas las empresas';
+            }
+            closeModal();
+            loadStats();
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/static/login.html';
+        }
+        
+        checkAuth();
+        loadStats();
+    </script>
+</body>
+</html>

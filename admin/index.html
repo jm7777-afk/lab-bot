@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Admin - Bot IA Multitenente</title>
+  <link rel="stylesheet" href="/admin/css/style.css" />
+</head>
+<body>
+  <div id="loginScreen" class="login-shell">
+    <div class="login-card">
+      <div class="logo">🤖</div>
+      <h1>Panel de Administración</h1>
+      <p>Accede con tus credenciales para gestionar empresas, bots y conversaciones.</p>
+      <form id="loginForm" onsubmit="event.preventDefault(); doLogin();">
+        <label>
+          Email
+          <input id="loginEmail" type="email" value="admin@admin.com" required />
+        </label>
+        <label>
+          Contraseña
+          <input id="loginPassword" type="password" value="admin123" required />
+        </label>
+        <button type="submit" class="btn btn-primary">Iniciar sesión</button>
+      </form>
+      <p id="loginError" class="form-error"></p>
+    </div>
+  </div>
+
+  <div id="dashboardShell" class="dashboard-shell hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div>
+          <p class="eyebrow">Bot IA</p>
+          <h2>Panel Admin</h2>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button data-section="dashboard" class="nav-item active" onclick="loadSection('dashboard', this)">📊 Dashboard</button>
+        <button data-section="companies" class="nav-item" onclick="loadSection('companies', this)">🏢 Empresas</button>
+        <button data-section="bot-config" class="nav-item" onclick="loadSection('bot-config', this)">⚙️ Configuración Bot</button>
+        <button data-section="conversations" class="nav-item" onclick="loadSection('conversations', this)">💬 Conversaciones</button>
+        <button data-section="analytics" class="nav-item" onclick="loadSection('analytics', this)">📈 Analíticas</button>
+        <button class="nav-item logout" onclick="logout()">🚪 Cerrar sesión</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Operación central</p>
+          <h1 id="sectionTitle">Dashboard</h1>
+        </div>
+        <div class="topbar-actions">
+          <span id="selectedCompanyBadge" class="company-badge">Selecciona una empresa</span>
+          <button class="btn btn-secondary" onclick="showCompanySelector()">Cambiar empresa</button>
+        </div>
+      </header>
+
+      <section id="contentArea" class="content-area"></section>
+    </main>
+  </div>
+
+  <div id="companyModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Seleccionar empresa</h2>
+      <p>Elige la empresa activa para ver estadísticas y configurar el bot.</p>
+      <select id="companySelect" class="form-control"></select>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="selectCompany()">Seleccionar</button>
+        <button class="btn btn-secondary" onclick="closeModal('companyModal')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/admin/js/admin.js"></script>
+</body>
+</html>

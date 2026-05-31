@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversaciones - Bot IA Admin</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <style>
+        .conversation-item {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .conversation-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .conversation-id {
+            font-family: monospace;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .conversation-channel {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .channel-web {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .channel-whatsapp {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .conversation-preview {
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .conversation-meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #a0aec0;
+        }
+        
+        .modal-messages {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .message-bubble {
+            margin-bottom: 16px;
+            padding: 12px;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+        
+        .message-user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .message-assistant {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .message-time {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        
+        .filters-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .filters-bar select, .filters-bar input {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 Bot IA</h2>
+                <p id="userName" class="user-name"></p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/static/pages/dashboard.html" class="nav-item">📊 Dashboard</a>
+                <a href="/static/pages/companies.html" class="nav-item">🏢 Empresas</a>
+                <a href="/static/pages/bot-config.html" class="nav-item">⚙️ Configuración</a>
+                <a href="/static/pages/conversations.html" class="nav-item active">💬 Conversaciones</a>
+                <a href="/static/pages/analytics.html" class="nav-item">📈 Analíticas</a>
+                <a href="#" class="nav-item" onclick="logout()">🚪 Cerrar Sesión</a>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <div class="top-bar">
+                <h1>💬 Historial de Conversaciones</h1>
+            </div>
+            
+            <div class="filters-bar">
+                <span>🏢</span>
+                <select id="companySelect" onchange="loadConversations()">
+                    <option value="">Seleccionar empresa...</option>
+                </select>
+                <span>📱</span>
+                <select id="channelFilter" onchange="filterConversations()">
+                    <option value="all">Todos los canales</option>
+                    <option value="web">Web</option>
+                    <option value="whatsapp">WhatsApp</option>
+                </select>
+                <input type="text" id="searchInput" placeholder="Buscar por ID..." onkeyup="filterConversations()">
+            </div>
+            
+            <div id="conversationsContainer">
+                <div class="conversation-item">
+                    <p style="color: #718096;">Selecciona una empresa para ver sus conversaciones</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div id="conversationModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3>💬 Detalle de Conversación</h3>
+            <div id="modalMessages" class="modal-messages"></div>
+            <div style="margin-top: 20px;">
+                <button onclick="closeModal()" class="btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+        let allConversations = [];
+        
+        function checkAuth() {
+            token = localStorage.getItem('admin_token');
+            if (!token) {
+                window.location.href = '/static/login.html';
+            }
+            document.getElementById('userName').innerText = localStorage.getItem('admin_name') || 'Admin';
+        }
+        
+        async function loadCompanies() {
+            const response = await fetch('/api/admin/companies', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            const select = document.getElementById('companySelect');
+            select.innerHTML = '<option value="">Seleccionar empresa...</option>';
+            data.data.forEach(company => {
+                select.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+            });
+        }
+        
+        async function loadConversations() {
+            const companyId = document.getElementById('companySelect').value;
+            if (!companyId) {
+                document.getElementById('conversationsContainer').innerHTML = `
+                    <div class="conversation-item">
+                        <p style="color: #718096;">Selecciona una empresa para ver sus conversaciones</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const response = await fetch(`/api/admin/companies/${companyId}/conversations`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            allConversations = data.data;
+            filterConversations();
+        }
+        
+        function filterConversations() {
+            const channel = document.getElementById('channelFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            
+            let filtered = allConversations;
+            if (channel !== 'all') {
+                filtered = filtered.filter(c => c.channel === channel);
+            }
+            if (search) {
+                filtered = filtered.filter(c => c.session_id.toLowerCase().includes(search) || c.id.toString().includes(search));
+            }
+            
+            const container = document.getElementById('conversationsContainer');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="conversation-item">No hay conversaciones que coincidan con los filtros</div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(conv => `
+                <div class="conversation-item" onclick="viewConversation(${conv.id})">
+                    <div class="conversation-header">
+                        <span class="conversation-id">#${conv.id} - ${conv.session_id.substring(0, 16)}...</span>
+                        <span class="conversation-channel ${conv.channel === 'web' ? 'channel-web' : 'channel-whatsapp'}">
+                            ${conv.channel === 'web' ? '🌐 Web Chat' : '📱 WhatsApp'}
+                        </span>
+                    </div>
+                    <div class="conversation-preview">
+                        ${conv.message_count} mensajes • Última actividad: ${new Date(conv.last_activity).toLocaleString()}
+                    </div>
+                    <div class="conversation-meta">
+                        <span>📅 Inicio: ${new Date(conv.started_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function viewConversation(conversationId) {
+            const response = await fetch(`/api/admin/conversations/${conversationId}/messages`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const messages = await response.json();
+            
+            const container = document.getElementById('modalMessages');
+            container.innerHTML = messages.map(msg => `
+                <div class="message-bubble message-${msg.role}">
+                    <strong>${msg.role === 'user' ? '👤 Usuario' : '🤖 Bot'}</strong>
+                    <div>${msg.content}</div>
+                    <div class="message-time">${new Date(msg.created_at).toLocaleString()}</div>
+                    ${msg.model_used ? `<div style="font-size: 10px; opacity: 0.6;">Modelo: ${msg.model_used}</div>` : ''}
+                </div>
+            `).join('');
+            
+            document.getElementById('conversationModal').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('conversationModal').style.display = 'none';
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/static/login.html';
+        }
+        
+        checkAuth();
+        loadCompanies();
+    </script>
+</body>
+</html>

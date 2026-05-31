@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empresas - Bot IA Admin</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <style>
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .btn-warning {
+            background: #ed8936;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-inactive {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .plan-badge {
+            background: #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        tr:hover {
+            background: #f7fafc;
+        }
+        
+        .uuid-cell {
+            font-family: monospace;
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 Bot IA</h2>
+                <p id="userName" class="user-name"></p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/static/pages/dashboard.html" class="nav-item">📊 Dashboard</a>
+                <a href="/static/pages/companies.html" class="nav-item active">🏢 Empresas</a>
+                <a href="/static/pages/bot-config.html" class="nav-item">⚙️ Configuración</a>
+                <a href="/static/pages/conversations.html" class="nav-item">💬 Conversaciones</a>
+                <a href="/static/pages/analytics.html" class="nav-item">📈 Analíticas</a>
+                <a href="#" class="nav-item" onclick="logout()">🚪 Cerrar Sesión</a>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <div class="top-bar">
+                <h1>🏢 Gestión de Empresas</h1>
+            </div>
+            
+            <div class="actions-bar">
+                <button class="btn-primary" onclick="showCreateModal()">+ Nueva Empresa</button>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>ID</th><th>UUID</th><th>Nombre</th><th>Plan</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody id="companiesTable">
+                        <tr><td colspan="7">Cargando empresas...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    
+    <div id="companyModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Nueva Empresa</h3>
+            <input type="hidden" id="companyId">
+            <div class="form-group">
+                <label>Nombre de la empresa</label>
+                <input type="text" id="companyName" placeholder="Ej: Tech Solutions S.A.">
+            </div>
+            <div class="form-group">
+                <label>Plan</label>
+                <select id="companyPlan">
+                    <option value="free">Free</option>
+                    <option value="pro">Pro</option>
+                    <option value="enterprise">Enterprise</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="saveCompany()" class="btn-primary">Guardar</button>
+                <button onclick="closeModal()" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+        
+        function checkAuth() {
+            token = localStorage.getItem('admin_token');
+            if (!token) {
+                window.location.href = '/static/login.html';
+            }
+            document.getElementById('userName').innerText = localStorage.getItem('admin_name') || 'Admin';
+        }
+        
+        async function loadCompanies() {
+            const response = await fetch('/api/admin/companies', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            const tbody = document.getElementById('companiesTable');
+            if (data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7">No hay empresas registradas</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.data.map(company => `
+                <tr>
+                    <td>${company.id}</td>
+                    <td class="uuid-cell">${company.uuid.substring(0, 16)}...</td>
+                    <td><strong>${company.name}</strong></td>
+                    <td><span class="plan-badge">${company.plan}</span></td>
+                    <td><span class="status-badge ${company.is_active ? 'status-active' : 'status-inactive'}">${company.is_active ? 'Activo' : 'Inactivo'}</span></td>
+                    <td>${new Date(company.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn-warning" onclick="editCompany(${company.id}, '${company.name}', '${company.plan}')" style="margin-right: 8px;">✏️</button>
+                        <button class="btn-danger" onclick="toggleCompanyStatus(${company.id}, ${!company.is_active})">${company.is_active ? '🔴' : '🟢'}</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function showCreateModal() {
+            document.getElementById('modalTitle').innerText = 'Nueva Empresa';
+            document.getElementById('companyId').value = '';
+            document.getElementById('companyName').value = '';
+            document.getElementById('companyPlan').value = 'free';
+            document.getElementById('companyModal').style.display = 'flex';
+        }
+        
+        function editCompany(id, name, plan) {
+            document.getElementById('modalTitle').innerText = 'Editar Empresa';
+            document.getElementById('companyId').value = id;
+            document.getElementById('companyName').value = name;
+            document.getElementById('companyPlan').value = plan;
+            document.getElementById('companyModal').style.display = 'flex';
+        }
+        
+        async function saveCompany() {
+            const id = document.getElementById('companyId').value;
+            const name = document.getElementById('companyName').value;
+            const plan = document.getElementById('companyPlan').value;
+            
+            if (!name) {
+                alert('El nombre es obligatorio');
+                return;
+            }
+            
+            const url = id ? `/api/admin/companies/${id}` : '/api/admin/companies';
+            const method = id ? 'PUT' : 'POST';
+            const body = { name, plan };
+            
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            
+            if (response.ok) {
+                closeModal();
+                loadCompanies();
+            } else {
+                const error = await response.json();
+                alert('Error: ' + JSON.stringify(error));
+            }
+        }
+        
+        async function toggleCompanyStatus(id, newStatus) {
+            const response = await fetch(`/api/admin/companies/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ is_active: newStatus })
+            });
+            
+            if (response.ok) {
+                loadCompanies();
+            } else {
+                alert('Error cambiando estado');
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('companyModal').style.display = 'none';
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/static/login.html';
+        }
+        
+        checkAuth();
+        loadCompanies();
+    </script>
+</body>
+</html>

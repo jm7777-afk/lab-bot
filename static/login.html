@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Panel Admin Bot IA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .login-container h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .login-container .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>🤖 Bot IA Admin</h1>
+        <div class="subtitle">Panel de administración multiempresa</div>
+        
+        <div id="errorMessage" class="error-message"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label>📧 Email</label>
+                <input type="email" id="email" placeholder="admin@admin.com" value="admin@admin.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label>🔒 Contraseña</label>
+                <input type="password" id="password" placeholder="••••••" value="admin123" required>
+            </div>
+            
+            <button type="submit">Ingresar al Dashboard</button>
+        </form>
+        
+        <div id="loading" class="loading">
+            <span>⏳ Verificando credenciales...</span>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            document.getElementById('loginForm').style.opacity = '0.5';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('admin_token', data.access_token);
+                    localStorage.setItem('admin_name', data.name);
+                    localStorage.setItem('admin_role', data.role);
+                    window.location.href = '/static/pages/dashboard.html';
+                } else {
+                    document.getElementById('errorMessage').textContent = data.detail || 'Credenciales incorrectas';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('loginForm').style.opacity = '1';
+                    document.getElementById('loading').style.display = 'none';
+                }
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = 'Error de conexión con el servidor';
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('loginForm').style.opacity = '1';
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+        
+        if (localStorage.getItem('admin_token')) {
+            window.location.href = '/static/pages/dashboard.html';
+        }
+    </script>
+</body>
+</html>

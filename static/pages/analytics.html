@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analíticas - Bot IA Admin</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <style>
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .analytics-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .analytics-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .metric-label {
+            color: #718096;
+        }
+        
+        .metric-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .recommendation {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .recommendation.warning {
+            background: #fff5f5;
+            border-left-color: #e53e3e;
+        }
+        
+        .recommendation.success {
+            background: #f0fff4;
+            border-left-color: #38a169;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 Bot IA</h2>
+                <p id="userName" class="user-name"></p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/static/pages/dashboard.html" class="nav-item">📊 Dashboard</a>
+                <a href="/static/pages/companies.html" class="nav-item">🏢 Empresas</a>
+                <a href="/static/pages/bot-config.html" class="nav-item">⚙️ Configuración</a>
+                <a href="/static/pages/conversations.html" class="nav-item">💬 Conversaciones</a>
+                <a href="/static/pages/analytics.html" class="nav-item active">📈 Analíticas</a>
+                <a href="#" class="nav-item" onclick="logout()">🚪 Cerrar Sesión</a>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <div class="top-bar">
+                <h1>📈 Analíticas y Reportes</h1>
+            </div>
+            
+            <div class="filters-bar" style="margin-bottom: 24px;">
+                <span>🏢</span>
+                <select id="companySelect" onchange="loadAnalytics()">
+                    <option value="">Seleccionar empresa...</option>
+                </select>
+            </div>
+            
+            <div class="analytics-grid" id="analyticsContainer">
+                <div class="analytics-card">
+                    <p style="color: #718096;">Selecciona una empresa para ver analíticas</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let token = null;
+        
+        function checkAuth() {
+            token = localStorage.getItem('admin_token');
+            if (!token) {
+                window.location.href = '/static/login.html';
+            }
+            document.getElementById('userName').innerText = localStorage.getItem('admin_name') || 'Admin';
+        }
+        
+        async function loadCompanies() {
+            const response = await fetch('/api/admin/companies', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            const select = document.getElementById('companySelect');
+            select.innerHTML = '<option value="">Seleccionar empresa...</option>';
+            data.data.forEach(company => {
+                select.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+            });
+        }
+        
+        async function loadAnalytics() {
+            const companyId = document.getElementById('companySelect').value;
+            if (!companyId) {
+                document.getElementById('analyticsContainer').innerHTML = `
+                    <div class="analytics-card">
+                        <p style="color: #718096;">Selecciona una empresa para ver analíticas</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const [statsResponse, configResponse, conversationsResponse] = await Promise.all([
+                fetch(`/api/admin/stats/companies/${companyId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`/api/admin/companies/${companyId}/bot-config`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`/api/admin/companies/${companyId}/conversations`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            
+            const stats = await statsResponse.json();
+            const config = await configResponse.json();
+            const conversations = await conversationsResponse.json();
+            
+            const avgMessagesPerConv = stats.total_conversations > 0 ? (stats.total_messages / stats.total_conversations).toFixed(1) : 0;
+            const activityRate = stats.active_conversations > 0 ? (stats.active_conversations / stats.total_conversations * 100).toFixed(1) : 0;
+            
+            let recommendations = [];
+            if (stats.messages_last_7_days < 10) {
+                recommendations.push({ type: 'warning', text: '⚠️ Bajo volumen de mensajes - Considera promocionar el bot' });
+            }
+            if (avgMessagesPerConv < 2) {
+                recommendations.push({ type: 'warning', text: '💬 Las conversaciones son muy cortas - Mejora el mensaje de bienvenida' });
+            }
+            if (config.temperature > 0.8) {
+                recommendations.push({ type: 'info', text: '🎨 La temperatura es alta - Respuestas más creativas pero menos precisas' });
+            }
+            if (stats.total_messages > 1000) {
+                recommendations.push({ type: 'success', text: '🎉 Excelente uso! El bot está siendo muy utilizado' });
+            }
+            
+            document.getElementById('analyticsContainer').innerHTML = `
+                <div class="analytics-card">
+                    <div class="analytics-title">📊 Métricas Generales</div>
+                    <div class="metric">
+                        <span class="metric-label">Total Conversaciones</span>
+                        <span class="metric-value">${stats.total_conversations}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Total Mensajes</span>
+                        <span class="metric-value">${stats.total_messages}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Mensajes (última semana)</span>
+                        <span class="metric-value">${stats.messages_last_7_days}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Conversaciones Activas</span>
+                        <span class="metric-value">${stats.active_conversations}</span>
+                    </div>
+                </div>
+                
+                <div class="analytics-card">
+                    <div class="analytics-title">📈 Indicadores de Rendimiento</div>
+                    <div class="metric">
+                        <span class="metric-label">Promedio mensajes por conversación</span>
+                        <span class="metric-value">${avgMessagesPerConv}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Tasa de actividad</span>
+                        <span class="metric-value">${activityRate}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Configuración actual</span>
+                        <span class="metric-value">Temp: ${config.temperature} | Modelo: ${config.model.split('-')[0]}</span>
+                    </div>
+                </div>
+                
+                <div class="analytics-card">
+                    <div class="analytics-title">💡 Recomendaciones</div>
+                    ${recommendations.map(rec => `
+                        <div class="recommendation ${rec.type === 'warning' ? 'warning' : (rec.type === 'success' ? 'success' : '')}">
+                            ${rec.text}
+                        </div>
+                    `).join('')}
+                    ${recommendations.length === 0 ? '<p style="color: #718096;">✅ Todo está funcionando correctamente</p>' : ''}
+                </div>
+            `;
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/static/login.html';
+        }
+        
+        checkAuth();
+        loadCompanies();
+    </script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración del Bot - Bot IA Admin</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <style>
+        .config-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .config-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .config-field {
+            margin-bottom: 20px;
+        }
+        
+        .config-field label {
+            display: block;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .config-field input, .config-field select, .config-field textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .config-field textarea {
+            min-height: 120px;
+            font-family: monospace;
+        }
+        
+        .config-field small {
+            display: block;
+            color: #718096;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        .range-value {
+            display: inline-block;
+            margin-left: 12px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .company-selector-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-on {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-off {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 Bot IA</h2>
+                <p id="userName" class="user-name"></p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/static/pages/dashboard.html" class="nav-item">📊 Dashboard</a>
+                <a href="/static/pages/companies.html" class="nav-item">🏢 Empresas</a>
+                <a href="/static/pages/bot-config.html" class="nav-item active">⚙️ Configuración</a>
+                <a href="/static/pages/conversations.html" class="nav-item">💬 Conversaciones</a>
+                <a href="/static/pages/analytics.html" class="nav-item">📈 Analíticas</a>
+                <a href="#" class="nav-item" onclick="logout()">🚪 Cerrar Sesión</a>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <div class="top-bar">
+                <h1>⚙️ Configuración del Bot</h1>
+            </div>
+            
+            <div class="company-selector-bar">
+                <span>🏢 Empresa:</span>
+                <select id="companySelect" onchange="loadConfig()">
+                    <option value="">Seleccionar empresa...</option>
+                </select>
+                <span id="botStatus"></span>
+            </div>
+            
+            <div class="config-container" id="configContainer">
+                <div class="config-card">
+                    <p style="text-align: center; color: #718096;">Selecciona una empresa para configurar su bot</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        let token = null;
+        let currentCompany = null;
+        
+        function checkAuth() {
+            token = localStorage.getItem('admin_token');
+            if (!token) {
+                window.location.href = '/static/login.html';
+            }
+            document.getElementById('userName').innerText = localStorage.getItem('admin_name') || 'Admin';
+        }
+        
+        async function loadCompanies() {
+            const response = await fetch('/api/admin/companies', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            const select = document.getElementById('companySelect');
+            select.innerHTML = '<option value="">Seleccionar empresa...</option>';
+            data.data.forEach(company => {
+                select.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+            });
+        }
+        
+        async function loadConfig() {
+            const companyId = document.getElementById('companySelect').value;
+            if (!companyId) {
+                document.getElementById('configContainer').innerHTML = `
+                    <div class="config-card">
+                        <p style="text-align: center; color: #718096;">Selecciona una empresa para configurar su bot</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            currentCompany = parseInt(companyId);
+            const response = await fetch(`/api/admin/companies/${companyId}/bot-config`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const config = await response.json();
+            
+            const statusHtml = `<span class="status-badge ${config.is_running ? 'status-on' : 'status-off'}">${config.is_running ? '🟢 Activo' : '🔴 Inactivo'}</span>`;
+            document.getElementById('botStatus').innerHTML = statusHtml;
+            
+            document.getElementById('configContainer').innerHTML = `
+                <div class="config-card">
+                    <div class="config-header">
+                        <h3>🤖 Configuración General</h3>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="botRunning" ${config.is_running ? 'checked' : ''} onchange="toggleBotStatus()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="config-field">
+                        <label>📝 Prompt del Sistema</label>
+                        <textarea id="systemPrompt" placeholder="Instrucciones para la IA...">${config.system_prompt || ''}</textarea>
+                        <small>Define el comportamiento y personalidad del bot</small>
+                    </div>
+                    
+                    <div class="config-field">
+                        <label>🎨 Temperatura (Creatividad)</label>
+                        <input type="range" id="temperature" min="0" max="1" step="0.1" value="${config.temperature || 0.7}" oninput="updateTempValue()">
+                        <span id="tempValue" class="range-value">${config.temperature || 0.7}</span>
+                        <small>Valor más bajo = respuestas más precisas y consistentes. Más alto = más creativo</small>
+                    </div>
+                    
+                    <div class="config-field">
+                        <label>🧠 Modelo de IA</label>
+                        <select id="model">
+                            <option value="llama3-70b-8192" ${config.model === 'llama3-70b-8192' ? 'selected' : ''}>Llama 3 70B (Recomendado)</option>
+                            <option value="mixtral-8x7b-32768" ${config.model === 'mixtral-8x7b-32768' ? 'selected' : ''}>Mixtral 8x7B</option>
+                            <option value="gpt-4o-mini" ${config.model === 'gpt-4o-mini' ? 'selected' : ''}>GPT-4o Mini</option>
+                        </select>
+                    </div>
+                    
+                    <div class="config-field">
+                        <label>📚 Mensajes de Contexto</label>
+                        <input type="number" id="maxContext" min="1" max="20" value="${config.max_context_messages || 10}">
+                        <small>Cantidad de mensajes anteriores que el bot recuerda</small>
+                    </div>
+                    
+                    <div class="config-field">
+                        <label>⏱️ Límite de mensajes por minuto (por usuario)</label>
+                        <input type="number" id="rateLimit" min="1" max="60" value="${config.rate_limit_per_user || 10}">
+                        <small>Previene abuso y controla costos</small>
+                    </div>
+                    
+                    <div class="config-field">
+                        <label>👋 Mensaje de Bienvenida</label>
+                        <textarea id="welcomeMessage" rows="3" placeholder="Mensaje cuando un usuario inicia conversación">${config.welcome_message || ''}</textarea>
+                    </div>
+                    
+                    <button class="btn-primary" onclick="saveConfig()" style="width: 100%; margin-top: 20px;">💾 Guardar Configuración</button>
+                </div>
+            `;
+        }
+        
+        function updateTempValue() {
+            const temp = document.getElementById('temperature').value;
+            document.getElementById('tempValue').innerText = temp;
+        }
+        
+        async function saveConfig() {
+            const config = {
+                system_prompt: document.getElementById('systemPrompt').value,
+                temperature: parseFloat(document.getElementById('temperature').value),
+                model: document.getElementById('model').value,
+                max_context_messages: parseInt(document.getElementById('maxContext').value),
+                rate_limit_per_user: parseInt(document.getElementById('rateLimit').value),
+                welcome_message: document.getElementById('welcomeMessage').value
+            };
+            
+            const response = await fetch(`/api/admin/companies/${currentCompany}/bot-config`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+            
+            if (response.ok) {
+                alert('✅ Configuración guardada correctamente');
+            } else {
+                alert('❌ Error al guardar la configuración');
+            }
+        }
+        
+        async function toggleBotStatus() {
+            const newStatus = document.getElementById('botRunning').checked;
+            const response = await fetch(`/api/admin/companies/${currentCompany}/bot-config`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ is_running: newStatus })
+            });
+            
+            if (response.ok) {
+                const badge = document.getElementById('botStatus');
+                badge.innerHTML = `<span class="status-badge ${newStatus ? 'status-on' : 'status-off'}">${newStatus ? '🟢 Activo' : '🔴 Inactivo'}</span>`;
+            }
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/static/login.html';
+        }
+        
+        checkAuth();
+        loadCompanies();
+    </script>
+</body>
+</html>
