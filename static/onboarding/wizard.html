@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Onboarding Wizard</title>
+  <script>
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const token = localStorage.getItem('access_token');
+    if(!token) location.href = '/static/registro.html';
+  });
+  </script>
+</head>
+<body>
+  <h1>Onboarding</h1>
+  <p>Completa los pasos para activar tu bot.</p>
+  <ol>
+    <li>Configura tu catálogo</li>
+    <li>Conecta WhatsApp</li>
+    <li>Prueba el bot</li>
+  </ol>
+  <a href="/static/dashboard/index.html">Ir al dashboard</a>
+</body>
+</html>

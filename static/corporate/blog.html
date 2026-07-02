@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - BotIA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/corporate/css/corporate.css">
+    <style>
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            margin: 40px 0;
+        }
+        
+        .blog-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s;
+        }
+        
+        .blog-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .blog-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+        }
+        
+        .blog-content {
+            padding: 24px;
+        }
+        
+        .blog-date {
+            color: var(--gray-500);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .blog-card h3 {
+            margin-bottom: 12px;
+            color: var(--gray-900);
+        }
+        
+        .blog-card p {
+            color: var(--gray-600);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        
+        .blog-card a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .blog-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand"><i class="fas fa-robot"></i><span>BotIA</span></div>
+            <div class="nav-menu" id="navMenu">
+                <a href="/" class="nav-link">Inicio</a>
+                <a href="/features" class="nav-link">Características</a>
+                <a href="/pricing" class="nav-link">Planes</a>
+                <a href="/about" class="nav-link">Nosotros</a>
+                <a href="/blog" class="nav-link active">Blog</a>
+                <a href="/contact" class="nav-link">Contacto</a>
+            </div>
+            <div class="nav-actions">
+                <a href="/login" class="btn-outline">Iniciar Sesión</a>
+                <a href="/static/registro.html" class="btn-primary">Probar Gratis</a>
+                <div class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero" style="padding: 100px 0 60px;">
+        <div class="container">
+            <div class="hero-grid">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        Blog de <span class="gradient-text">BotIA</span>
+                    </h1>
+                    <p class="hero-description">
+                        Artículos, tips y novedades sobre automatización con IA para WhatsApp.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section style="padding: 60px 0;">
+        <div class="container">
+            <div class="blog-grid">
+                <div class="blog-card">
+                    <div class="blog-image">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="blog-content">
+                        <div class="blog-date">31 de mayo, 2024</div>
+                        <h3>¿Por qué automatizar con IA?</h3>
+                        <p>Descubre los beneficios de usar inteligencia artificial para automatizar la atención al cliente de tu negocio.</p>
+                        <a href="#">Leer más →</a>
+                    </div>
+                </div>
+
+                <div class="blog-card">
+                    <div class="blog-image">
+                        <i class="fas fa-whatsapp"></i>
+                    </div>
+                    <div class="blog-content">
+                        <div class="blog-date">28 de mayo, 2024</div>
+                        <h3>Integrando WhatsApp Business</h3>
+                        <p>Guía paso a paso para conectar tu número de WhatsApp Business con BotIA.</p>
+                        <a href="#">Leer más →</a>
+                    </div>
+                </div>
+
+                <div class="blog-card">
+                    <div class="blog-image">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="blog-content">
+                        <div class="blog-date">25 de mayo, 2024</div>
+                        <h3>Casos de éxito: +40% ventas</h3>
+                        <p>Cómo una pizzería aumentó sus ventas un 40% con BotIA en 3 meses.</p>
+                        <a href="#">Leer más →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>¿Listo para automatizar?</h2>
+                <p>Prueba BotIA gratis y descubre cómo puede transformar tu negocio</p>
+                <a href="/static/registro.html" class="btn-primary btn-large">Comenzar prueba gratis</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <i class="fas fa-robot"></i>
+                    <h3>BotIA</h3>
+                    <p>Automatización inteligente para WhatsApp.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Producto</h4>
+                    <a href="/features">Características</a>
+                    <a href="/pricing">Planes</a>
+                </div>
+                <div class="footer-links">
+                    <h4>Compañía</h4>
+                    <a href="/about">Nosotros</a>
+                    <a href="/blog">Blog</a>
+                </div>
+                <div class="footer-links">
+                    <h4>Soporte</h4>
+                    <a href="/help">Ayuda</a>
+                    <a href="/legal/terms">Términos</a>
+                </div>
+                <div class="footer-social">
+                    <h4>Síguenos</h4>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 BotIA. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/corporate/js/corporate.js"></script>
+</body>
+</html>

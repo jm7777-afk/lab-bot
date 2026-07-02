@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - BotIA Enterprise</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gray-100);
+            color: var(--gray-800);
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, var(--gray-900) 0%, var(--gray-800) 100%);
+            color: white;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .company-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .company-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .company-plan {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            margin: 4px 12px;
+            border-radius: 12px;
+            color: var(--gray-300);
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .nav-item i {
+            width: 24px;
+            margin-right: 12px;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 24px;
+        }
+
+        .top-bar {
+            background: white;
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gray-100);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: var(--gray-500);
+            font-size: 14px;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        th {
+            background: var(--gray-50);
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+
+        .form-group { margin-bottom: 24px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--gray-300); border-radius: 12px; }
+        .btn-primary { background: var(--primary); color: white; padding: 12px 24px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        @media (max-width: 1024px) {
+            .charts-row { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-robot"></i> BotIA</h2>
+            <div class="company-info">
+                <div class="company-name" id="companyName">Mi Negocio</div>
+                <div class="company-plan" id="companyPlan">Plan: Free</div>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-item active" data-page="dashboard">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </div>
+            <div class="nav-item" data-page="orders">
+                <i class="fas fa-shopping-cart"></i> Pedidos
+            </div>
+            <div class="nav-item" data-page="products">
+                <i class="fas fa-box"></i> Productos
+            </div>
+            <div class="nav-item" data-page="clients">
+                <i class="fas fa-users"></i> Clientes
+            </div>
+            <div class="nav-item" data-page="conversations">
+                <i class="fas fa-comments"></i> Conversaciones
+            </div>
+            <div class="nav-item" data-page="settings">
+                <i class="fas fa-cog"></i> Configuración
+            </div>
+            <div class="nav-item" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </div>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <h1 class="page-title" id="pageTitle">Dashboard</h1>
+            <div>
+                <span id="currentDate"></span>
+            </div>
+        </div>
+
+        <div id="pageContent">
+            <div id="dashboardContent">
+                <div class="stats-grid" id="statsGrid">Cargando estadísticas...</div>
+                <div class="charts-row">
+                    <div class="card"><div class="card-title">📈 Ventas semanales</div><canvas id="salesChart" height="250"></canvas></div>
+                    <div class="card"><div class="card-title">📱 Canales</div><canvas id="channelChart" height="250"></canvas></div>
+                </div>
+                <div class="card"><div class="card-title">🔄 Pedidos recientes</div><table id="recentOrders"><thead><tr><th>ID</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Fecha</th></tr></thead><tbody></tbody></table></div>
+            </div>
+
+            <div id="productsContent" style="display: none;">
+                <div class="card">
+                    <div class="card-title" style="display: flex; justify-content: space-between;">
+                        <span>📦 Productos</span>
+                        <button class="btn-primary">+ Agregar</button>
+                    </div>
+                    <table id="productsTable">
+                        <thead>
+                            <tr><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="ordersContent" style="display: none;">
+                <div class="card">
+                    <div class="card-title">📋 Pedidos</div>
+                    <table id="ordersTable">
+                        <thead>
+                            <tr><th>ID</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="clientsContent" style="display: none;">
+                <div class="card">
+                    <div class="card-title">👥 Clientes</div>
+                    <table id="clientsTable">
+                        <thead>
+                            <tr><th>CI</th><th>Nombre</th><th>Teléfono</th><th>Pedidos</th><th>Gastado</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="settingsContent" style="display: none;">
+                <div class="card">
+                    <div class="card-title">⚙️ Configuración</div>
+                    <form id="settingsForm">
+                        <div class="form-group">
+                            <label class="form-label">Nombre del negocio</label>
+                            <input type="text" id="businessName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono WhatsApp</label>
+                            <input type="text" id="businessPhone" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tono del bot</label>
+                            <select id="botTone" class="form-control">
+                                <option value="formal">Formal</option>
+                                <option value="amigable">Amigable</option>
+                                <option value="divertido">Divertido</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary">Guardar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        let salesChart, channelChart;
+
+        if (!token) window.location.href = '/static/login.html';
+
+        document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+            item.addEventListener('click', () => {
+                const page = item.dataset.page;
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+                document.querySelectorAll('#dashboardContent, #productsContent, #ordersContent, #clientsContent, #settingsContent').forEach(c => c.style.display = 'none');
+                document.getElementById(`${page}Content`).style.display = 'block';
+                document.getElementById('pageTitle').innerText = {dashboard:'Dashboard',products:'Productos',orders:'Pedidos',clients:'Clientes',settings:'Configuración'}[page];
+                if (page === 'dashboard') loadDashboard();
+            });
+        });
+
+        async function loadDashboard() {
+            document.getElementById('statsGrid').innerHTML = 'Cargando...';
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const stats = await response.json();
+                
+                document.getElementById('statsGrid').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div><div class="stat-value">${stats.total_orders || 0}</div><div class="stat-label">Pedidos</div></div>
+                            <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div><div class="stat-value">$${stats.total_sales || 0}</div><div class="stat-label">Ventas</div></div>
+                            <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div><div class="stat-value">${stats.total_clients || 0}</div><div class="stat-label">Clientes</div></div>
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div><div class="stat-value">${stats.total_conversations || 0}</div><div class="stat-label">Conversaciones</div></div>
+                            <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/static/login.html';
+        }
+
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        loadDashboard();
+    </script>
+</body>
+</html>

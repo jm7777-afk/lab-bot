@@ -1,37 +1,27 @@
+﻿"""
+BOT IA ENTERPRISE - FastAPI Main
+Plataforma SaaS multi-tenant para WhatsApp
+"""
 import os
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from passlib.hash import bcrypt
 
-from app.api import admin as admin_api, web_chat, whatsapp_webhook
-from app.database import Base, SessionLocal, engine
-from app.models.company import AdminUser
+from app.api import webhook, admin, public
+from app.database import engine, Base
+from app.config import config
 
-Base.metadata.create_all(bind=engine)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-
-def ensure_default_admin():
-    db = SessionLocal()
-    try:
-        if db.query(AdminUser).filter(AdminUser.email == "admin@admin.com").first() is None:
-            db.add(
-                AdminUser(
-                    email="admin@admin.com",
-                    password_hash=bcrypt.hash("admin123"),
-                    role="super_admin",
-                )
-            )
-            db.commit()
-    finally:
-        db.close()
-
-
-ensure_default_admin()
-
-app = FastAPI(title="Bot Multitenente IA", version="1.0.0")
+app = FastAPI(
+    title="Bot IA Enterprise",
+    description="Plataforma SaaS multi-tenant para automatizar WhatsApp",
+    version="2.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,39 +31,103 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(web_chat.router)
-app.include_router(whatsapp_webhook.router, prefix="/webhook", tags=["whatsapp"])
-app.include_router(admin_api.router)
-
-os.makedirs("static", exist_ok=True)
-with open("app/templates/chat_widget.js", "r", encoding="utf-8") as source:
-    with open("static/chat-widget.js", "w", encoding="utf-8") as target:
-        target.write(source.read())
-
+# Static assets
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
+app.mount("/admin-ui", StaticFiles(directory="admin"), name="admin_ui")
+
+# Routers
+app.include_router(webhook.router, prefix="/webhook", tags=["whatsapp"])
+app.include_router(admin.router)
+app.include_router(public.router)
+
+# Get base path for static files
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Corporate routes
+@app.get("/")
+async def home():
+    """Serve home page"""
+    file_path = os.path.join(BASE_DIR, "static/corporate/index.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"message": "BotIA - Plataforma SaaS Multi-tenant"}
+
+@app.get("/features")
+async def features():
+    """Serve features page"""
+    file_path = os.path.join(BASE_DIR, "static/corporate/features.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"message": "Características"}
+
+@app.get("/pricing")
+async def pricing():
+    """Serve pricing page"""
+    file_path = os.path.join(BASE_DIR, "static/corporate/pricing.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"message": "Planes disponibles: Free, Startup, Business"}
+
+@app.get("/about")
+async def about():
+    """Serve about page"""
+    file_path = os.path.join(BASE_DIR, "static/corporate/about.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"message": "Acerca de BotIA"}
+
+@app.get("/contact")
+async def contact():
+    """Serve contact page"""
+    file_path = os.path.join(BASE_DIR, "static/corporate/contact.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"message": "Contacto"}
+
+@app.get("/blog")
+async def blog():
+    """Serve blog page"""
+    file_path = os.path.join(BASE_DIR, "static/corporate/blog.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"message": "Blog de BotIA"}
+
+@app.get("/login")
+async def login():
+    """Serve login page"""
+    return FileResponse(os.path.join(BASE_DIR, "static/login.html"), media_type="text/html")
+
+@app.on_event("startup")
+async def startup():
+    """Crear tablas en la base de datos al iniciar"""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("✅ Base de datos inicializada - MySQL")
+    except Exception as e:
+        logger.error(f"❌ Error inicializando BD: {str(e)}")
 
 
-@app.get("/admin")
+@app.get("/api", tags=["general"])
+async def api_info():
+    return {
+        "status": "online",
+        "app": "Bot IA Enterprise",
+        "version": "2.0.0",
+        "database": config.MYSQL_DATABASE,
+    }
+
+
+@app.get("/health", tags=["general"])
+async def health():
+    return {"status": "healthy"}
+
+
+@app.get("/admin-ui")
 async def admin_index():
     return FileResponse("admin/index.html")
 
 
-@app.get("/admin/")
+@app.get("/admin-ui/")
 async def admin_index_slash():
     return FileResponse("admin/index.html")
-
-
-@app.on_event("startup")
-def startup_seed():
-    ensure_default_admin()
-
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
-
-
-@app.get("/")
-async def root():
-    return {"message": "Bot multitenente IA listo", "status": "online"}
